@@ -10,6 +10,8 @@
 ;;; Emacs-like keyboard operations on the clipboard history (Win+v) do NOT work well while this script runs.
 ;;; Please use the Up/Down arrow key or mouse. 
 
+;;; My indentation coding style is two spaces.
+
 ; AutoHotKey 2.0 configuration
 #Requires AutoHotkey v2.0
 #Warn ; Enable warnings to assist with detecting common errors.
