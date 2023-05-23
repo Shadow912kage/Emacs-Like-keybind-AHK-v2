@@ -1,5 +1,5 @@
 # Emacs-Like-keybind-AHK-v2
-An implementation of Emacs-like keybindings.
+An implementation of Emacs-like keybindings.  
 Support clipboard history.  
 ***** NOTICE! *****  
 Emacs-like keyboard operations on the clipboard history (Win+v) do NOT work well while this script runs.  
