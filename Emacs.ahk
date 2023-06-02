@@ -1,6 +1,6 @@
 ; AutoHotKey V2's Script, Emacs like keybind
 ;; Shadow912kage@gmail.com
-;; Reference:
+;; References:
 ;;   AutoHotKey v1->v2への移行 ～Emacs-likeなキーバインド設定編～ - Qiita
 ;;     https://qiita.com/asublue/items/0e3fad2667545793466d
 ;;	 IfWinActive with the Windows 10 clipboard history (Win+V) : r/AutoHotkey
@@ -8,7 +8,7 @@
 
 ;;; ***** NOTICE! *****
 ;;; Emacs-like keyboard operations on the clipboard history (Win+v) do NOT work well while this script runs.
-;;; Please use the Up/Down arrow key or mouse. 
+;;; Please use the Up/Down arrow key or mouse.
 
 ;;; My indentation coding style is two spaces.
 
@@ -20,7 +20,7 @@
 SendMode "Input" ; Recommended for new scripts due to its superior speed and reliability.
 
 TraySetIcon "keyboard.png" ; Icon source from https://icooon-mono.com/
-A_IconTip := "Emacs like keybind v0.3.6"
+A_IconTip := "Emacs like keybind v0.3.7"
 
 ; Swapping CapsLock and Left Ctrl are implemented by Ctrl2Cap.
 ;; ****** When using Ctrl2Cap, DO NOT remap the key to CapsLock... don't work well. *****
@@ -359,6 +359,11 @@ u::
 {
 	global IsPreCSpc
 	IsPreCSpc := !IsPreCSpc
+;	global DebugLog
+;	If GetCursorPos(WinExist("A"), &x, &y)
+;		DebugLog .= "X: " . x . ",Y: " . y . "`n"
+;	Else
+;		DebugLog .= "FAIL!`n"
 }
 ^a:: BgnEndLine(True)
 ^e:: BgnEndLine(False)
@@ -408,10 +413,10 @@ v::
 	Global Win10Oct2018
 	If VerCompare(A_OSVersion, Win10Oct2018)
 	{
-		If IsHiddenClpbdHst(GetHWNDClpbdHst())
-			ScrollUpDwn(False)
-		Else
+		If IsHiddenClpbdHst(GetHWNDClpbdHst()) = 0
 			Send A_ThisHotkey
+		Else ; Adding case of DllCall return False
+			ScrollUpDwn(False)
 	}
 	Else
 		ScrollUpDwn(False)
@@ -500,17 +505,16 @@ GetHWNDClpbdHst()
 }
 IsHiddenClpbdHst(Child)
 {
-	DwmGetWinAttr := "dwmapi\DwmGetWindowAttribute" 
-	Return (DllCall(DwmGetWinAttr, "ptr", Child, "int", 14, "int*", &cloaked := 0, "int", 4) = 0)?cloaked:False
+	; Windows 10 Pro 22H2 Build 19045.3031 caused DllCall to return failure immediately
+	; after Windows boot before using clipboard history. Something may have changed...
+	DwmGetWinAttr := "dwmapi\DwmGetWindowAttribute"
+	If DllCall(DwmGetWinAttr, "ptr", Child, "int", 14, "int*", &cloaked := 0, "int", 4) = 0
+		Return cloaked
+	Else ; Adding case of DllCall return False
+		Return -1
 }
-/*; For debug & development
-DebugLog := ""
-^F2::
-{ ; use DebugLog for printf debugging
-	Global
-	MsgBox DebugLog
-	DebugLog := ""
-}
+
+/* ; For debug & development
 IsOpnClpbdHst := False ; Change to True, when the clipboard history window is opened (edge trigger)
 IsClsClpbdHst := False ; Change to True, when the clipboard history window is closed (edge trigger)
 SetTimer ChkClpbdHst, 100
@@ -518,16 +522,7 @@ ChkClpbdHst()
 {
 	Global IsOpnClpbdHst, IsClsClpbdHst
 	Static PstClpbdStat := False ; opened: True / closed: False
-	If IsHiddenClpbdHst(GetHWNDClpbdHst())
-	{ ; Case: closed
-		If PstClpbdStat ; Case: opened -> closed
-		{
-			IsOpnClpbdHst := False
-			IsClsClpbdHst := True
-			PstClpbdStat := False
-		}
-	}
-	Else
+	If IsHiddenClpbdHst(GetHWNDClpbdHst()) = 0
 	{ ; Case: opened
 		If !PstClpbdStat ; Case: closed -> opened
 		{
@@ -536,5 +531,60 @@ ChkClpbdHst()
 			PstClpbdStat := True
 		}
 	}
+	Else
+	{ ; Case: closed or DllCall return False
+		If PstClpbdStat ; Case: opened -> closed
+		{
+			IsOpnClpbdHst := False
+			IsClsClpbdHst := True
+			PstClpbdStat := False
+		}
+	}
+}
+*/
+
+/*
+DebugLog := ""
+^F2::
+{ ; use DebugLog for printf debugging
+	Global
+	MsgBox DebugLog
+	DebugLog := ""
+}
+*/
+
+; Sub-functions for tiny curses lib
+/*
+GetCursorPos(hConsole, &x, &y)
+{
+;CONSOLE_SCREEN_BUFFER_INFO Structure - Windows Console | Microsoft Learn
+;https://learn.microsoft.com/ja-jp/windows/console/console-screen-buffer-info-str
+;typedef struct _CONSOLE_SCREEN_BUFFER_INFO {
+;  COORD      dwSize;
+;  COORD      dwCursorPosition;
+;  WORD       wAttributes;
+;  SMALL_RECT srWindow;
+;  COORD      dwMaximumWindowSize;
+;} CONSOLE_SCREEN_BUFFER_INFO;
+;typedef struct _COORD {
+;  SHORT X;
+;  SHORT Y;
+;} COORD, *PCOORD;
+;typedef struct _SMALL_RECT {
+;  SHORT Left;
+;  SHORT Top;
+;  SHORT Right;
+;  SHORT Bottom;
+;} SMALL_RECT;
+;SHORT: 2 bytes, WORD: 4 bytes
+;COORD: 4 bytes, SMALL_RECT: 8 bytes, CONSOLE_SCREEN_BUFFER_INFO: 24 bytes
+	pCnslScrnBufInfo := Buffer(24, 0)
+	If DllCall("GetConsoleScreenBufferInfo", "UPtr", hConsole, "Ptr", pCnslScrnBufInfo)
+	{
+		x := NumGet(pCnslScrnBufInfo, 4, "Short")
+		y := NumGet(pCnslScrnBufInfo, 6, "Short")
+		Return True
+	}
+	Return False
 }
 */
