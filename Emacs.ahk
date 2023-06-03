@@ -20,7 +20,7 @@
 SendMode "Input" ; Recommended for new scripts due to its superior speed and reliability.
 
 TraySetIcon "keyboard.png" ; Icon source from https://icooon-mono.com/
-A_IconTip := "Emacs like keybind v0.3.7"
+A_IconTip := "Emacs like keybind v0.3.8pre"
 
 ; Swapping CapsLock and Left Ctrl are implemented by Ctrl2Cap.
 ;; ****** When using Ctrl2Cap, DO NOT remap the key to CapsLock... don't work well. *****
@@ -60,6 +60,7 @@ IsPreCtrX := False ; C-x prefix flag
 IsPreCSpc := False ; C-SPC prefix flag
 IsSrching := False ; Searching flag
 CursorDir := "" ; Cursor direction after copy region
+MarkCurPos := 0 ; Mark cursor position
 
 RstPreFlgs() ; Reset prefix flags
 {
@@ -277,7 +278,17 @@ PageTopBtm(dir) ; Page up to the top(True)/down to the bottom(False)
 }
 
 ; Emacs like keybind hotkeys
-^x:: Global IsPreCtrX := True
+^x::
+{
+	Global IsPreCtrX, MarkCurPos
+	If IsPreCtrX
+	{
+		SetSciPos(MarkCurPos)
+		IsPreCtrX := False
+	}
+	Else
+		IsPreCtrX := True
+}
 Esc::
 ^[::
 {
@@ -357,13 +368,9 @@ u::
 }
 ^Space::
 {
-	global IsPreCSpc
-	IsPreCSpc := !IsPreCSpc
-;	global DebugLog
-;	If GetCursorPos(WinExist("A"), &x, &y)
-;		DebugLog .= "X: " . x . ",Y: " . y . "`n"
-;	Else
-;		DebugLog .= "FAIL!`n"
+	global IsPreCSpc, MarkCurPos
+	If IsPreCSpc := !IsPreCSpc
+		MarkCurPos := GetSciCurrentPos()
 }
 ^a:: BgnEndLine(True)
 ^e:: BgnEndLine(False)
@@ -513,6 +520,94 @@ IsHiddenClpbdHst(Child)
 	Else ; Adding case of DllCall return False
 		Return -1
 }
+#HotIf ; End of Clipborad history
+
+/*
+DebugLog := ""
+^F2::
+{ ; use DebugLog for printf debugging
+	Global
+	GetNtpppCursorPos(&row, &col)
+	DebugLog := "Row: " row+1 " Col: " col+1 "`n"
+	DebugLog .= "Sci 1st Visible Line: " GetSciFirstVisibleLine()+1 "`n"
+	DebugLog .= "Sci Current Pos: " GetSciCurrentPos()+1 "`n"
+	DebugLog .= "Sci Lines On Screen: " GetSciLinesOnScreen()+1 "`n"
+	MsgBox DebugLog
+	DebugLog := ""
+}
+*/
+
+GroupAdd "CursorPosApp", "ahk_exe notepadd++.exe" ; Notepad++
+#HotIf WinActive("ahk_group CursorPosApp")
+; For Notepadd++
+; References:
+;	 Set line and column in Notepad++ - AutoHotkey Community
+;		https://www.autohotkey.com/boards/viewtopic.php?t=56096
+;	 How can I find the value to send to Notepad++ through send message. | Notepad++ Community
+;   https://community.notepad-plus-plus.org/topic/24412/how-can-i-find-the-value-to-send-to-notepad-through-send-message/6
+;  Scintilla Documentation
+;   https://www.scintilla.org/ScintillaDoc.html
+GetNtpppHWND()
+{
+	Return DllCall("FindWindow", "Str", "Notepad++", "Int", 0, "Ptr")
+}
+GetNtpppCursorPos(&row, &col)
+{
+	If NtpppHWND := GetNtpppHWND()
+	{
+  	row := DllCall("SendMessage", "Int", NtpppHWND, "UInt", 4033 , "Int", 0, "Int", 0)
+  	col := DllCall("SendMessage", "Int", NtpppHWND, "UInt", 4032 , "Int", 0, "Int", 0)
+	}
+	Else
+	{
+		row := -1
+		col := -1
+	}
+}
+GetSciHWND(Handle)
+{
+  Return ControlGetHwnd("Scintilla1", Handle)
+}
+/*
+GetSciFirstVisibleLine()
+{
+	If SciHWND := GetSciHWND(GetNtpppHWND())
+		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2152 , "Int", 0, "Int", 0)
+	Return -1
+}
+*/
+GetSciCurrentPos()
+{
+	If SciHWND := GetSciHWND(GetNtpppHWND())
+		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2008 , "Int", 0, "Int", 0)
+	Return -1
+}
+/*
+GetSciLinesOnScreen()
+{
+	If SciHWND := GetSciHWND(GetNtpppHWND())
+		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2370 , "Int", 0, "Int", 0)
+	Return -1
+}
+*/
+SetSciLine(Line)
+{
+	If SciHWND := GetSciHWND(GetNtpppHWND())
+		DllCall("SendMessage", "Int", SciHWND, "UInt", 2024 , "Int", Line, "Int", 0)
+}
+SetSciPos(Pos)
+{
+	If SciHWND := GetSciHWND(GetNtpppHWND())
+		DllCall("SendMessage", "Int", SciHWND, "UInt", 2025 , "Int", Pos, "Int", 0)
+}
+/*
+SciScrollCaret()
+{
+	If SciHWND := GetSciHWND(GetNtpppHWND())
+		DllCall("SendMessage", "Int", SciHWND, "UInt", 2169 , "Int", , "Int", 0)
+}
+*/
+#HotIf ; End of CursorPosApp
 
 /* ; For debug & development
 IsOpnClpbdHst := False ; Change to True, when the clipboard history window is opened (edge trigger)
@@ -540,16 +635,6 @@ ChkClpbdHst()
 			PstClpbdStat := False
 		}
 	}
-}
-*/
-
-/*
-DebugLog := ""
-^F2::
-{ ; use DebugLog for printf debugging
-	Global
-	MsgBox DebugLog
-	DebugLog := ""
 }
 */
 
