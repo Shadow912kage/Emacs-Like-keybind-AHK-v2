@@ -10,4 +10,4 @@ References:<br>
 -[IfWinActive with the Windows 10 clipboard history (Win+V) : r/AutoHotkey](https://www.reddit.com/r/AutoHotkey/comments/11lro53/ifwinactive_with_the_windows_10_clipboard_history/)<br>
 -[Set line and column in Notepad++ - AutoHotkey Community](https://www.autohotkey.com/boards/viewtopic.php?t=56096)<br>
 -[How can I find the value to send to Notepad++ through send message. | Notepad++ Community](https://community.notepad-plus-plus.org/topic/24412/how-can-i-find-the-value-to-send-to-notepad-through-send-message/6)<br>
--[Scintilla Documentation](https://www.scintilla.org/ScintillaDoc.html)<br>
+-[Scintilla and SciTE](https://www.scintilla.org/index.html)<br>
