@@ -280,14 +280,21 @@ PageTopBtm(dir) ; Page up to the top(True)/down to the bottom(False)
 ; Emacs like keybind hotkeys
 ^x::
 {
-	Global IsPreCtrX, MarkCurPos
-	If IsPreCtrX
+	Global IsPreCtrX, IsCursorApp, MarkCurPos
+	If IsCursorApp
 	{
-		SetSciPos(MarkCurPos)
-		IsPreCtrX := False
+		If IsPreCtrX
+		{
+			curpos := GetCurrentPos()
+			SetPos(MarkCurPos)
+			MarkCurPos := curpos
+			IsPreCtrX := False
+		}
+		Else
+			IsPreCtrX := True
 	}
 	Else
-		IsPreCtrX := True
+		IsPreCtrX := !IsPreCtrX
 }
 Esc::
 ^[::
@@ -368,9 +375,10 @@ u::
 }
 ^Space::
 {
-	global IsPreCSpc, MarkCurPos
+	global IsPreCSpc, IsCursorApp, MarkCurPos
 	If IsPreCSpc := !IsPreCSpc
-		MarkCurPos := GetSciCurrentPos()
+		If IsCursorApp
+			MarkCurPos := GetCurrentPos()
 }
 ^a:: BgnEndLine(True)
 ^e:: BgnEndLine(False)
@@ -537,16 +545,18 @@ DebugLog := ""
 }
 */
 
+IsCursorApp := False
 GroupAdd "CursorPosApp", "ahk_exe notepadd++.exe" ; Notepad++
 #HotIf WinActive("ahk_group CursorPosApp")
+IsCursorApp := True
 ; For Notepadd++
 ; References:
 ;	 Set line and column in Notepad++ - AutoHotkey Community
 ;		https://www.autohotkey.com/boards/viewtopic.php?t=56096
 ;	 How can I find the value to send to Notepad++ through send message. | Notepad++ Community
 ;   https://community.notepad-plus-plus.org/topic/24412/how-can-i-find-the-value-to-send-to-notepad-through-send-message/6
-;  Scintilla Documentation
-;   https://www.scintilla.org/ScintillaDoc.html
+;  Scintilla and SciTE
+;   https://www.scintilla.org/index.html
 GetNtpppHWND()
 {
 	Return DllCall("FindWindow", "Str", "Notepad++", "Int", 0, "Ptr")
@@ -576,7 +586,8 @@ GetSciFirstVisibleLine()
 	Return -1
 }
 */
-GetSciCurrentPos()
+;GetSciCurrentPos()
+GetCurrentPos()
 {
 	If SciHWND := GetSciHWND(GetNtpppHWND())
 		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2008 , "Int", 0, "Int", 0)
@@ -590,12 +601,14 @@ GetSciLinesOnScreen()
 	Return -1
 }
 */
-SetSciLine(Line)
+;SetSciLine(Line)
+SetLine(Line)
 {
 	If SciHWND := GetSciHWND(GetNtpppHWND())
 		DllCall("SendMessage", "Int", SciHWND, "UInt", 2024 , "Int", Line, "Int", 0)
 }
-SetSciPos(Pos)
+;SetSciPos(Pos)
+SetPos(Pos)
 {
 	If SciHWND := GetSciHWND(GetNtpppHWND())
 		DllCall("SendMessage", "Int", SciHWND, "UInt", 2025 , "Int", Pos, "Int", 0)
@@ -635,41 +648,5 @@ ChkClpbdHst()
 			PstClpbdStat := False
 		}
 	}
-}
-*/
-
-; Sub-functions for tiny curses lib
-/*
-GetCursorPos(hConsole, &x, &y)
-{
-;CONSOLE_SCREEN_BUFFER_INFO Structure - Windows Console | Microsoft Learn
-;https://learn.microsoft.com/ja-jp/windows/console/console-screen-buffer-info-str
-;typedef struct _CONSOLE_SCREEN_BUFFER_INFO {
-;  COORD      dwSize;
-;  COORD      dwCursorPosition;
-;  WORD       wAttributes;
-;  SMALL_RECT srWindow;
-;  COORD      dwMaximumWindowSize;
-;} CONSOLE_SCREEN_BUFFER_INFO;
-;typedef struct _COORD {
-;  SHORT X;
-;  SHORT Y;
-;} COORD, *PCOORD;
-;typedef struct _SMALL_RECT {
-;  SHORT Left;
-;  SHORT Top;
-;  SHORT Right;
-;  SHORT Bottom;
-;} SMALL_RECT;
-;SHORT: 2 bytes, WORD: 4 bytes
-;COORD: 4 bytes, SMALL_RECT: 8 bytes, CONSOLE_SCREEN_BUFFER_INFO: 24 bytes
-	pCnslScrnBufInfo := Buffer(24, 0)
-	If DllCall("GetConsoleScreenBufferInfo", "UPtr", hConsole, "Ptr", pCnslScrnBufInfo)
-	{
-		x := NumGet(pCnslScrnBufInfo, 4, "Short")
-		y := NumGet(pCnslScrnBufInfo, 6, "Short")
-		Return True
-	}
-	Return False
 }
 */
