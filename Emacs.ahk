@@ -285,10 +285,26 @@ PageTopBtm(dir) ; Page up to the top(True)/down to the bottom(False)
 	{
 		If IsPreCtrX
 		{
-			curpos := GetCurrentPos()
-			SetPos(MarkCurPos)
-			MarkCurPos := curpos
 			IsPreCtrX := False
+			curpos := GetCurrentPos()
+			If curpos != MarkCurPos
+			{
+				If curpos > MarkCurPos
+				{
+					Send "{Right}"
+					i := curpos
+					While i-- > MarkCurPos
+						Send "+{Left}"
+				}
+				Else
+				{
+					Send "{Left}"
+					i := curpos
+					While i++ < MarkCurPos
+						Send "+{Right}"
+				}
+				MarkCurPos := curpos
+			}
 		}
 		Else
 			IsPreCtrX := True
@@ -561,6 +577,7 @@ GetNtpppHWND()
 {
 	Return DllCall("FindWindow", "Str", "Notepad++", "Int", 0, "Ptr")
 }
+;If NtpppHWND := GetNtpppHWND()
 GetNtpppCursorPos(&row, &col)
 {
 	If NtpppHWND := GetNtpppHWND()
@@ -586,8 +603,8 @@ GetSciFirstVisibleLine()
 	Return -1
 }
 */
-;GetSciCurrentPos()
-GetCurrentPos()
+GetCurrentPos := GetSciCurrentPos
+GetSciCurrentPos()
 {
 	If SciHWND := GetSciHWND(GetNtpppHWND())
 		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2008 , "Int", 0, "Int", 0)
@@ -601,14 +618,14 @@ GetSciLinesOnScreen()
 	Return -1
 }
 */
-;SetSciLine(Line)
-SetLine(Line)
+SetLine := SetSciLine
+SetSciLine(Line)
 {
 	If SciHWND := GetSciHWND(GetNtpppHWND())
 		DllCall("SendMessage", "Int", SciHWND, "UInt", 2024 , "Int", Line, "Int", 0)
 }
-;SetSciPos(Pos)
-SetPos(Pos)
+SetPos := SetSciPos
+SetSciPos(Pos)
 {
 	If SciHWND := GetSciHWND(GetNtpppHWND())
 		DllCall("SendMessage", "Int", SciHWND, "UInt", 2025 , "Int", Pos, "Int", 0)
