@@ -20,7 +20,7 @@
 SendMode "Input" ; Recommended for new scripts due to its superior speed and reliability.
 
 TraySetIcon "keyboard.png" ; Icon source from https://icooon-mono.com/
-A_IconTip := "Emacs like keybind v0.3.8RC2"
+A_IconTip := "Emacs like keybind v0.3.8RC4"
 
 ; Swapping CapsLock and Left Ctrl are implemented by Ctrl2Cap.
 ;; ****** When using Ctrl2Cap, DO NOT remap the key to CapsLock... don't work well. *****
@@ -105,9 +105,10 @@ KillLine() ; Delete to the end of line
 	}
 	Else
   { ; Case the cursor position is the end of the line, ClipWait() returns False (used to return w/o WaitForAnyData).
-    Send "{ShiftDown}{Right}{ShiftUp}"
-    Sleep BPWT
-		Send "^x"
+		;Send "{ShiftDown}{Right}{ShiftUp}"
+    ;Sleep BPWT
+		;Send "^x"
+		DelChar()
 		RstrClipBd()
   }
   RstAllFlgs()
@@ -277,37 +278,42 @@ PageTopBtm(dir) ; Page up to the top(True)/down to the bottom(False)
     loc := "^{END}"
   _MoveCore(loc)
 }
+ExchangeMarkCurPos() ; Exchange marked and current cursor positions
+{
+	Global MarkCurPos, MarkCurCol
+	curpos := GetCurrentPos()
+	curcol := GetCursorCol()
+	If curpos != MarkCurPos
+	{
+		curpos -= (curcol - MarkCurCol)
+		If curpos > MarkCurPos
+		{
+			Send "{Right}"
+			i := curpos
+			While i-- > MarkCurPos
+				Send "+{Left}"
+		}
+		Else
+		{
+			Send "{Left}"
+			i := curpos
+			While i++ < MarkCurPos
+				Send "+{Right}"
+		}
+		MarkCurPos := curpos
+	}
+}
 
 ; Emacs like keybind hotkeys
 ^x::
 {
-	Global IsPreCtrX, IsCursorApp, MarkCurPos, MarkCurCol
+	Global IsPreCtrX, IsCursorApp
 	If IsCursorApp
 	{
 		If IsPreCtrX
 		{
 			IsPreCtrX := False
-			curpos := GetCurrentPos()
-			curcol := GetCursorCol()
-			If curpos != MarkCurPos
-			{
-				curpos -= (curcol - MarkCurCol)
-				If curpos > MarkCurPos
-				{
-					Send "{Right}"
-					i := curpos
-					While i-- > MarkCurPos
-						Send "+{Left}"
-				}
-				Else
-				{
-					Send "{Left}"
-					i := curpos
-					While i++ < MarkCurPos
-						Send "+{Right}"
-				}
-				MarkCurPos := curpos
-			}
+			ExchangeMarkCurPos()
 		}
 		Else
 			IsPreCtrX := True
