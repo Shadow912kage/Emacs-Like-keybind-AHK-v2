@@ -20,7 +20,7 @@
 SendMode "Input" ; Recommended for new scripts due to its superior speed and reliability.
 
 TraySetIcon "keyboard.png" ; Icon source from https://icooon-mono.com/
-A_IconTip := "Emacs like keybind v0.3.8pre"
+A_IconTip := "Emacs like keybind v0.3.8RC2"
 
 ; Swapping CapsLock and Left Ctrl are implemented by Ctrl2Cap.
 ;; ****** When using Ctrl2Cap, DO NOT remap the key to CapsLock... don't work well. *****
@@ -60,7 +60,8 @@ IsPreCtrX := False ; C-x prefix flag
 IsPreCSpc := False ; C-SPC prefix flag
 IsSrching := False ; Searching flag
 CursorDir := "" ; Cursor direction after copy region
-MarkCurPos := 0 ; Mark cursor position
+MarkCurPos := 0 ; Marked cursor position
+MarkCurCol := 0 ; Marked cursor column
 
 RstPreFlgs() ; Reset prefix flags
 {
@@ -280,15 +281,17 @@ PageTopBtm(dir) ; Page up to the top(True)/down to the bottom(False)
 ; Emacs like keybind hotkeys
 ^x::
 {
-	Global IsPreCtrX, IsCursorApp, MarkCurPos
+	Global IsPreCtrX, IsCursorApp, MarkCurPos, MarkCurCol
 	If IsCursorApp
 	{
 		If IsPreCtrX
 		{
 			IsPreCtrX := False
 			curpos := GetCurrentPos()
+			curcol := GetCursorCol()
 			If curpos != MarkCurPos
 			{
+				curpos -= (curcol - MarkCurCol)
 				If curpos > MarkCurPos
 				{
 					Send "{Right}"
@@ -391,10 +394,13 @@ u::
 }
 ^Space::
 {
-	global IsPreCSpc, IsCursorApp, MarkCurPos
+	global IsPreCSpc, IsCursorApp, MarkCurPos, MarkCurCol
 	If IsPreCSpc := !IsPreCSpc
 		If IsCursorApp
+		{
 			MarkCurPos := GetCurrentPos()
+			MarkCurCol := GetCursorCol()
+		}
 }
 ^a:: BgnEndLine(True)
 ^e:: BgnEndLine(False)
@@ -553,9 +559,10 @@ DebugLog := ""
 	Global
 	GetNtpppCursorPos(&row, &col)
 	DebugLog := "Row: " row+1 " Col: " col+1 "`n"
-	DebugLog .= "Sci 1st Visible Line: " GetSciFirstVisibleLine()+1 "`n"
+	DebugLog .= "Marked position: " MarkCurPos+1 "`n"
+	DebugLog .= "Marked col: " MarkCurCol+1 "`n"
 	DebugLog .= "Sci Current Pos: " GetSciCurrentPos()+1 "`n"
-	DebugLog .= "Sci Lines On Screen: " GetSciLinesOnScreen()+1 "`n"
+	DebugLog .= "Current col: " GetNtpppCol()+1 "`n"
 	MsgBox DebugLog
 	DebugLog := ""
 }
@@ -578,6 +585,21 @@ GetNtpppHWND()
 	Return DllCall("FindWindow", "Str", "Notepad++", "Int", 0, "Ptr")
 }
 ;If NtpppHWND := GetNtpppHWND()
+GetCursorRow := GetNtpppRow
+GetCursorCol := GetNtpppCol
+GetCursorPos := GetNtpppCursorPos
+GetNtpppRow()
+{
+	If NtpppHWND := GetNtpppHWND()
+  	Return DllCall("SendMessage", "Int", NtpppHWND, "UInt", 4033 , "Int", 0, "Int", 0)
+	Return -1
+}
+GetNtpppCol()
+{
+	If NtpppHWND := GetNtpppHWND()
+  	Return DllCall("SendMessage", "Int", NtpppHWND, "UInt", 4032 , "Int", 0, "Int", 0)
+	Return -1
+}
 GetNtpppCursorPos(&row, &col)
 {
 	If NtpppHWND := GetNtpppHWND()
