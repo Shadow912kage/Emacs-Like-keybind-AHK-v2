@@ -20,7 +20,7 @@
 SendMode "Input" ; Recommended for new scripts due to its superior speed and reliability.
 
 TraySetIcon "keyboard.png" ; Icon source from https://icooon-mono.com/
-A_IconTip := "Emacs like keybind v0.3.8RC4"
+A_IconTip := "Emacs like keybind v0.3.8"
 
 ; Swapping CapsLock and Left Ctrl are implemented by Ctrl2Cap.
 ;; ****** When using Ctrl2Cap, DO NOT remap the key to CapsLock... don't work well. *****
