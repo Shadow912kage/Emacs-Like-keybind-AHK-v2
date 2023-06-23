@@ -20,7 +20,7 @@
 SendMode "Input" ; Recommended for new scripts due to its superior speed and reliability.
 
 TraySetIcon "keyboard.png" ; Icon source from https://icooon-mono.com/
-A_IconTip := "Emacs like keybind v0.3.8"
+A_IconTip := "Emacs like keybind v0.3.9"
 
 ; Swapping CapsLock and Left Ctrl are implemented by Ctrl2Cap.
 ;; ****** When using Ctrl2Cap, DO NOT remap the key to CapsLock... don't work well. *****
@@ -621,48 +621,63 @@ GetNtpppCursorPos(&row, &col)
 }
 GetSciHWND(Handle)
 {
-  Return ControlGetHwnd("Scintilla1", Handle)
+  Return ControlGetHwnd("Scintilla1", Handle) ; NEED error handling? NOT, Another method is needed!
 }
 /*
 GetSciFirstVisibleLine()
 {
-	If SciHWND := GetSciHWND(GetNtpppHWND())
-		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2152 , "Int", 0, "Int", 0)
+	If NtpppHWND := GetNtpppHWND()
+	{
+		If (SciHWND := GetSciHWND(NtpppHWND))
+			Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2152 , "Int", 0, "Int", 0)
+		Return -1
+	}
 	Return -1
 }
 */
 GetCurrentPos := GetSciCurrentPos
 GetSciCurrentPos()
 {
-	If SciHWND := GetSciHWND(GetNtpppHWND())
-		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2008 , "Int", 0, "Int", 0)
+	If NtpppHWND := GetNtpppHWND()
+	{
+		If SciHWND := GetSciHWND(NtpppHWND)
+			Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2008 , "Int", 0, "Int", 0)
+		Return -1
+	}
 	Return -1
 }
 /*
 GetSciLinesOnScreen()
 {
-	If SciHWND := GetSciHWND(GetNtpppHWND())
-		Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2370 , "Int", 0, "Int", 0)
+	If NtpppHWND := GetNtpppHWND()
+	{
+		If SciHWND := GetSciHWND(NtpppHWND)
+			Return DllCall("SendMessage", "Int", SciHWND, "UInt", 2370 , "Int", 0, "Int", 0)
+		Return -1
+	}
 	Return -1
 }
 */
 SetLine := SetSciLine
 SetSciLine(Line)
 {
-	If SciHWND := GetSciHWND(GetNtpppHWND())
-		DllCall("SendMessage", "Int", SciHWND, "UInt", 2024 , "Int", Line, "Int", 0)
+	If NtpppHWND := GetNtpppHWND()
+		If SciHWND := GetSciHWND(NtpppHWND)
+			DllCall("SendMessage", "Int", SciHWND, "UInt", 2024 , "Int", Line, "Int", 0)
 }
 SetPos := SetSciPos
 SetSciPos(Pos)
 {
-	If SciHWND := GetSciHWND(GetNtpppHWND())
-		DllCall("SendMessage", "Int", SciHWND, "UInt", 2025 , "Int", Pos, "Int", 0)
+	If NtpppHWND := GetNtpppHWND()
+		If SciHWND := GetSciHWND(NtpppHWND)
+			DllCall("SendMessage", "Int", SciHWND, "UInt", 2025 , "Int", Pos, "Int", 0)
 }
 /*
 SciScrollCaret()
 {
-	If SciHWND := GetSciHWND(GetNtpppHWND())
-		DllCall("SendMessage", "Int", SciHWND, "UInt", 2169 , "Int", , "Int", 0)
+	If NtpppHWND := GetNtpppHWND()
+		If SciHWND := GetSciHWND(NtpppHWND)
+			DllCall("SendMessage", "Int", SciHWND, "UInt", 2169 , "Int", , "Int", 0)
 }
 */
 #HotIf ; End of CursorPosApp
